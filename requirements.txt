@@ -1,0 +1,17 @@
+# Web Framework
+fastapi
+uvicorn[standard]
+
+# Redis Client (async support + faster C parser)
+redis[hiredis]
+
+# Configuration Management
+pydantic-settings
+
+# JWT Authentication (for demo)
+python-jose[cryptography]
+
+# Testing
+pytest
+pytest-asyncio
+httpx
