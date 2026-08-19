@@ -14,7 +14,8 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 # Add current directory to path
 sys.path.append(str(Path(__file__).parent))
@@ -22,6 +23,7 @@ sys.path.append(str(Path(__file__).parent))
 from config.settings import settings
 from core.redis_client import redis_client
 from api.middleware import RateLimitMiddleware
+from api.stripe import router as stripe_router
 
 # Configure logging
 logging.basicConfig(
@@ -29,6 +31,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+BASE_DIR = Path(__file__).parent
+STATIC_DIR = BASE_DIR / "static"
 
 
 @asynccontextmanager
@@ -54,14 +58,16 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Rate Limiter API",
-    description="Demo API with Token Bucket rate limiting",
+    title="Still Studio Yoga",
+    description="Minimal yoga studio website with class booking",
     version="1.0.0",
     lifespan=lifespan,
 )
 
 # Add rate limiting middleware
 app.add_middleware(RateLimitMiddleware)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.include_router(stripe_router)
 
 
 # ========== ROUTES ==========
@@ -82,21 +88,29 @@ async def health_check():
     }
 
 
-@app.get("/")
+@app.get("/", response_class=FileResponse)
 async def root():
-    """
-    Root endpoint (rate-limited).
-    
-    This is rate-limited by IP address since there's no authentication.
-    """
-    return {
-        "message": "Welcome to the Rate Limiter API!",
-        "docs": "/docs",
-        "rate_limit": {
-            "capacity": settings.rate_limit_capacity,
-            "refill_rate": settings.rate_limit_refill_rate,
-        }
-    }
+    return STATIC_DIR / "index.html"
+
+
+@app.get("/about", response_class=FileResponse)
+async def about():
+    return STATIC_DIR / "about.html"
+
+
+@app.get("/classes", response_class=FileResponse)
+async def classes():
+    return STATIC_DIR / "classes.html"
+
+
+@app.get("/blog", response_class=FileResponse)
+async def blog():
+    return STATIC_DIR / "blog.html"
+
+
+@app.get("/contact", response_class=FileResponse)
+async def contact():
+    return STATIC_DIR / "contact.html"
 
 
 @app.get("/api/data")

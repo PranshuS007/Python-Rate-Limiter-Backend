@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     app_port: int = 8000
     
+    # ========== Stripe Configuration ==========
+    stripe_public_key: str = ""
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_currency: str = "usd"
+    
     # Pydantic configuration
     model_config = SettingsConfigDict(
         env_file=".env",  # Load from .env file

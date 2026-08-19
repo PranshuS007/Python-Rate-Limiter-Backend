@@ -8,6 +8,9 @@ redis[hiredis]
 # Configuration Management
 pydantic-settings
 
+# Payments
+stripe
+
 # JWT Authentication (for demo)
 python-jose[cryptography]
 
