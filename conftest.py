@@ -26,6 +26,15 @@ import pytest_asyncio
 
 sys.path.append(str(Path(__file__).parent))
 
+# The Github/ folder holds a cloned copy of this repo whose test modules have
+# the same basenames as ours (test_api.py, ...). Collecting both makes pytest
+# fail with "import file mismatch". Exclude the clone regardless of the working
+# directory pytest is invoked from. collect_ignore paths are resolved relative
+# to this conftest's directory, so this works even when the harness runs pytest
+# from a parent directory.
+collect_ignore = ["Github"]
+collect_ignore_glob = ["Github/*", "Github/**/*"]
+
 from core.redis_client import redis_client
 from core import rate_limiter as rate_limiter_module
 
