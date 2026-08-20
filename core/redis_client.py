@@ -61,9 +61,11 @@ class RedisClient:
             logger.info("Redis client already connected")
             return
         
+        pool: Optional[ConnectionPool] = None
+        
         try:
             # Create connection pool
-            self._pool = ConnectionPool(
+            pool = ConnectionPool(
                 host=settings.redis_host,
                 port=settings.redis_port,
                 password=settings.redis_password if settings.redis_password else None,
@@ -75,11 +77,16 @@ class RedisClient:
             )
             
             # Create Redis client from pool
-            self._redis = Redis(connection_pool=self._pool)
+            redis = Redis(connection_pool=pool)
             
             # Test connection with PING command
             # 'await' means: "pause here until Redis responds, but handle other requests meanwhile"
-            await self._redis.ping()
+            await redis.ping()
+            
+            # Only publish the client once the connection is proven working,
+            # so is_connected / get_client never expose an unusable client
+            self._pool = pool
+            self._redis = redis
             
             logger.info(
                 f"✅ Connected to Redis at {settings.redis_host}:{settings.redis_port}"
@@ -87,6 +94,10 @@ class RedisClient:
         
         except RedisError as e:
             logger.error(f"❌ Failed to connect to Redis: {e}")
+            
+            # Release the half-built pool; _redis stays None so is_connected is False
+            if pool is not None:
+                await pool.disconnect()
             
             # Fail-closed: Raise error and STOP application
             if not settings.fail_open:
