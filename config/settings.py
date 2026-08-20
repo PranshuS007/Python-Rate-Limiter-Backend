@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     # ========== Application Configuration ==========
     app_host: str = "0.0.0.0"
     app_port: int = 8000
+
+    # ========== Proxy / Client Identification ==========
+    # Comma-separated list of trusted proxy IPs. X-Forwarded-For is only
+    # honoured when the direct connection comes from one of these proxies.
+    # Empty (default) = never trust X-Forwarded-For; use the socket IP.
+    trusted_proxies: str = ""
+
+    @property
+    def trusted_proxy_set(self) -> set[str]:
+        return {ip.strip() for ip in self.trusted_proxies.split(",") if ip.strip()}
     
     # ========== Stripe Configuration ==========
     stripe_public_key: str = ""

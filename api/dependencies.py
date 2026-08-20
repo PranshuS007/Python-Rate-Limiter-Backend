@@ -9,9 +9,12 @@ This module extracts a unique identifier from incoming requests using:
 Priority order: User ID > API Key > IP Address
 """
 
+import hashlib
 import logging
 from typing import Optional
 from fastapi import Request
+
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +56,11 @@ def get_client_id_from_api_key(request: Request) -> Optional[str]:
     """
     api_key = request.headers.get("X-API-Key")
     if api_key:
-        logger.debug(f"Identified client by API key: {api_key[:8]}...")
-        return f"apikey:{api_key}"
+        # Hash the key so buckets are keyed per-client without the raw
+        # secret ever being used as a Redis key or written to logs.
+        key_hash = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+        logger.debug(f"Identified client by API key (hash prefix): {key_hash[:8]}...")
+        return f"apikey:{key_hash}"
     
     return None
 
@@ -72,19 +78,22 @@ def get_client_id_from_ip(request: Request) -> str:
     Returns:
         "ip:<ip_address>" (always succeeds)
     """
-    # Check for X-Forwarded-For (proxy/load balancer)
+    # Direct socket IP is the only value the client cannot forge.
+    direct_ip = request.client.host if request.client else "unknown"
+
+    # Only honour X-Forwarded-For when the request actually arrived from a
+    # configured trusted proxy. Otherwise any client could set the header
+    # and get a fresh rate-limit bucket on every request.
     forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
+    if forwarded_for and direct_ip in settings.trusted_proxy_set:
         # X-Forwarded-For can be: "client, proxy1, proxy2"
         # We want the first IP (the actual client)
         client_ip = forwarded_for.split(",")[0].strip()
-        logger.debug(f"Identified client by X-Forwarded-For: {client_ip}")
+        logger.debug(f"Identified client by X-Forwarded-For via trusted proxy: {client_ip}")
         return f"ip:{client_ip}"
-    
-    # Fallback to direct connection IP
-    client_ip = request.client.host if request.client else "unknown"
-    logger.debug(f"Identified client by IP: {client_ip}")
-    return f"ip:{client_ip}"
+
+    logger.debug(f"Identified client by direct IP: {direct_ip}")
+    return f"ip:{direct_ip}"
 
 
 def get_client_identifier(request: Request) -> str:
