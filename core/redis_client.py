@@ -114,7 +114,7 @@ class RedisClient:
         Called at application shutdown to clean up resources.
         """
         if self._redis:
-            await self._redis.close()
+            await self._redis.aclose()
             logger.info("Redis connection closed")
         
         if self._pool:
