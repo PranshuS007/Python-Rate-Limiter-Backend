@@ -1,21 +1,21 @@
 # Web Framework
-fastapi
-uvicorn[standard]
+fastapi~=0.141.1
+uvicorn[standard]~=0.52.2
 
 # Redis Client (async support + faster C parser)
-redis[hiredis]
+redis[hiredis]~=8.1.0
 
 # Configuration Management
-pydantic-settings
+pydantic-settings~=2.15.0
 
 # Payments
-stripe
+stripe~=15.5.1
 
 # JWT Authentication (for demo)
-python-jose[cryptography]
+python-jose[cryptography]~=3.5.0
 
 # Testing
-pytest
-pytest-asyncio
-httpx
-fakeredis
+pytest~=9.1.1
+pytest-asyncio~=1.4.0
+httpx~=0.28.1
+fakeredis~=2.37.1
